@@ -1,0 +1,7 @@
+{
+  "logging": {
+    "level": 20,
+    "format": "%(asctime)s | %(message)s",
+    "date_format": "%d-%b-%y %H:%M:%S"
+  }
+}
