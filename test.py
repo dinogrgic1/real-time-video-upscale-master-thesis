@@ -1,6 +1,4 @@
 import logging
-from time import sleep
-
 import cv2
 from python_json_config import ConfigBuilder
 
@@ -19,4 +17,14 @@ if __name__ == '__main__':
     ip.add_pipeline(ImagePreprocessing.bicubic_interpolation(0.6))
 
     vp = VideoPreprocessing(ip)
-    vp.extract_frames("./videos/bunny.mp4", "./videos/extracted")
+    frames = vp.extract_frames("./videos/bunny.mp4", "./videos/extracted")
+
+    if frames is None:
+        print("Error opening video stream or file")
+
+    for frame in frames:
+        cv2.imshow('VIDEO FRAME', frame)
+        if cv2.waitKey(25) & 0xFF == ord('q'):
+            break
+
+    cv2.destroyAllWindows()
