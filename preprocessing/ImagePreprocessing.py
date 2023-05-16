@@ -1,6 +1,6 @@
 import logging
-import cv2
 import inspect
+from torchvision import transforms
 
 
 class ImagePreprocessing:
@@ -8,7 +8,8 @@ class ImagePreprocessing:
 
     @staticmethod
     def bicubic_interpolation(ratio):
-        return lambda image: cv2.resize(image, dsize=(int(image.shape[1] * ratio), int(image.shape[0] * ratio)), interpolation=cv2.INTER_CUBIC)
+        return lambda image: transforms.Resize(size=(int(image.shape[1] * ratio), int(image.shape[2] * ratio)),
+                                               interpolation=transforms.InterpolationMode.BILINEAR).forward(image)
 
     def add_pipeline(self, function):
         if function is None:
@@ -24,6 +25,3 @@ class ImagePreprocessing:
         pipeline_str = ''.join([inspect.getsource(method) for method in self.pipeline])
         logging.info(f'Image processing pipeline has following methods {pipeline_str}')
 
-    def export_image(self, image, destination_file_path, frame_num):
-        new_image = self.run_pipeline(image)
-        logging.debug(cv2.imwrite(f"{destination_file_path}/frame{frame_num}.jpg", new_image))
