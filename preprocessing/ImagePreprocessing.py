@@ -9,7 +9,20 @@ class ImagePreprocessing:
     @staticmethod
     def bicubic_interpolation(ratio):
         return lambda image: transforms.Resize(size=(int(image.shape[1] * ratio), int(image.shape[2] * ratio)),
-                                               interpolation=transforms.InterpolationMode.BILINEAR).forward(image)
+                                               interpolation=transforms.InterpolationMode.BILINEAR,
+                                               antialias=True).forward(image)
+
+    @staticmethod
+    def bilinear_interpolation(ratio):
+        return lambda image: transforms.Resize(size=(int(image.shape[1] * ratio), int(image.shape[2] * ratio)),
+                                               interpolation=transforms.InterpolationMode.BILINEAR,
+                                               antialias=True).forward(image)
+
+    @staticmethod
+    def lanczos_interpolation(ratio):
+        return lambda image: transforms.Resize(size=(int(image.shape[1] * ratio), int(image.shape[2] * ratio)),
+                                               interpolation=transforms.InterpolationMode.LANCZOS,
+                                               antialias=True).forward(image)
 
     def add_pipeline(self, function):
         if function is None:
