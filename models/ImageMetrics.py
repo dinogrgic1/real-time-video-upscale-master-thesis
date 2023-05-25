@@ -4,9 +4,6 @@ import torch
 
 
 class ImageMetrics:
-    loss_fn_alex = lpips.LPIPS(net='alex')  # best forward scores
-    loss_fn_vgg = lpips.LPIPS(net='vgg')  # closer to "traditional" perceptual loss, when used for optimization
-
     @staticmethod
     def __l2__metric__tensor(first_image: torch.Tensor, second_image: torch.Tensor, range=255.):
         return ImageMetrics.__l2_metric__numpy(first_image.numpy(), second_image.numpy(), range)
@@ -62,4 +59,18 @@ class ImageMetrics:
             return ImageMetrics.__dssim_metric__numpy(first_image, second_image, range)
         if type(first_image) == torch.Tensor:
             return ImageMetrics.__dssim__metric__tensor(first_image, second_image, range)
+        raise Exception('Unsupported image type')
+
+    @staticmethod
+    def __lpips__metric__tensor(model: lpips.LPIPS, first_image: torch.Tensor, second_image: torch.Tensor):
+        return model(first_image, second_image).detach().numpy().flatten()[0]
+
+    @staticmethod
+    def lpips_metric(first_image, second_image, net='vgg'):
+        model = lpips.LPIPS(net=net, verbose=False)
+        if type(first_image) != type(second_image):
+            raise Exception('Images are not of the same type')
+
+        if type(first_image) == torch.Tensor:
+            return ImageMetrics.__lpips__metric__tensor(model, first_image, second_image)
         raise Exception('Unsupported image type')

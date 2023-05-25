@@ -1,5 +1,6 @@
 import logging
 import inspect
+import cv2
 from torchvision import transforms
 
 
@@ -37,4 +38,7 @@ class ImagePreprocessing:
     def print_pipeline(self):
         pipeline_str = ''.join([inspect.getsource(method) for method in self.pipeline])
         logging.info(f'Image processing pipeline has following methods {pipeline_str}')
+
+    def export_image(self, image, frame_num, destination_file_path='exported'):
+        logging.debug(cv2.imwrite(f"{destination_file_path}/frame{frame_num}.jpg", image.numpy()))
 
