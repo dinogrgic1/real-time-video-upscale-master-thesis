@@ -6,6 +6,8 @@ from PIL import Image
 import torchvision
 import cv2
 import numpy as np
+import random
+import tensorflow as tf
 
 
 class VideoPreprocessing:
@@ -14,21 +16,33 @@ class VideoPreprocessing:
     def __init__(self, image_processing):
         self.image_processing = image_processing
 
-    def extract_frames(self, file_path, destination_file_path, export_image=False):
+    @staticmethod
+    def format_frames(frame, output_size):
+        """
+          Pad and resize an image from a video.
+
+          Args:
+            frame: Image that needs to resized and padded.
+            output_size: Pixel size of the output frame image.
+
+          Return:
+            Formatted frame with padding of specified output size.
+        """
+        frame = tf.image.convert_image_dtype(frame, tf.float32)
+        frame = tf.image.resize_with_pad(frame, *output_size)
+        return frame
+
+    def extract_frames(self, file_path, output_size, destination_file_path, export_image=False):
+        full_file_path = os.path.abspath(file_path)
         logging.info(
-            f"Extracting video frames from {os.path.abspath(file_path)} to {os.path.abspath(destination_file_path)}")
+            f"Extracting video frames from {full_file_path} to {os.path.abspath(destination_file_path)}")
         self.image_processing.print_pipeline()
 
-        reader = torchvision.io.read_video(os.path.abspath(file_path), output_format="TCHW", pts_unit='sec')
-        idx = 0
-        for frame_batch in reader[:-2]:
-            for image in frame_batch:
-                resized = np.transpose(self.image_processing.run_pipeline(image.cuda()).cpu().numpy(), (1, 2, 0))
-                processed_image = cv2.cvtColor(resized, cv2.COLOR_BGR2RGB)
+        src = cv2.VideoCapture(full_file_path)
+        src.set(cv2.CAP_PROP_POS_FRAMES, 0)
+        ret, frame = src.read()
+        yield VideoPreprocessing.format_frames(frame, output_size)
 
-                if export_image is True:
-                    self.image_processing.export_image(torch.Tensor(processed_image), idx,
-                                                       destination_file_path=os.path.abspath(destination_file_path))
-                    idx += 1
-
-                yield processed_image
+        while ret:
+            ret, frame = src.read()
+            yield VideoPreprocessing.format_frames(frame, output_size)
