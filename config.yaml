@@ -2,3 +2,7 @@ LOGGING:
   LEVEL: 20
   FORMAT: "%(asctime)s | %(message)s"
   DATE_FORMAT: "%d-%b-%y %H:%M:%S"
+VIDEO_PLAYER:
+  CAP_FPS: True
+  WINDOW_IDENTIFIER: "Video output"
+  DELTA_REAL_TIME_MS_VIDEO: 10

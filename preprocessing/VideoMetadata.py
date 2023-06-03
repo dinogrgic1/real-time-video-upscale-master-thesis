@@ -3,26 +3,21 @@ import logging
 
 
 class VideoMetadata:
-    fps = None
-    height = None
-    width = None
-    frames = None
 
-    def __init__(self, width, height, fps, frames):
-        self.width = width
-        self.height = height
-        self.fps = fps
-        self.frames = frames
+    def __init__(self, stream):
+        self.width = int(stream.get(cv2.CAP_PROP_FRAME_WIDTH))
+        self.height = int(stream.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        self.fps = stream.get(cv2.CAP_PROP_FPS)
+        self.fps_to_ms = int((1 / self.fps) * 1000)
+        self.bitrate = stream.get(cv2.CAP_PROP_BITRATE)
+        self.num_frames = (stream.get(cv2.CAP_PROP_FRAME_COUNT))
+        self.duration = self.num_frames / self.fps
 
     def __str__(self):
-        return f"VideoMetadata(Width: {self.width}px, Height: {self.height}px, FPS: {self.fps}, Frames: {self.frames})"
-
-    @staticmethod
-    def extract_from_cv2_video_capture(video_capture):
-        frames = int(video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
-        width = int(video_capture.get(cv2.CAP_PROP_FRAME_WIDTH))
-        height = int(video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        fps = video_capture.get(cv2.CAP_PROP_FPS)
-        video_metadata = VideoMetadata(width, height, fps, frames)
-        logging.info(video_metadata)
-        return video_metadata
+        return f"Video information\n" \
+                f"\tWidth: {self.width}\n" \
+                f"\tHeight: {self.height}\n" \
+                f"\tFPS:  {self.fps}\n" \
+                f"\tBitrate:  {self.bitrate} kbits/s\n" \
+                f"\tNumber of frames:  {self.num_frames}\n" \
+                f"\tDuration:  {self.duration} s"
