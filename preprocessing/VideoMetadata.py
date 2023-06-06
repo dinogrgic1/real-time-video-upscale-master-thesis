@@ -10,11 +10,13 @@ class VideoMetadata:
         self.fps = stream.get(cv2.CAP_PROP_FPS)
         self.fps_to_ms = int((1 / self.fps) * 1000)
         self.bitrate = stream.get(cv2.CAP_PROP_BITRATE)
-        self.num_frames = (stream.get(cv2.CAP_PROP_FRAME_COUNT))
+        self.num_frames = stream.get(cv2.CAP_PROP_FRAME_COUNT)
+        self.codec = int(stream.get(cv2.CAP_PROP_FOURCC))
         self.duration = self.num_frames / self.fps
 
     def __str__(self):
         return f"Video information\n" \
+                f"\tCodec: {self.codec}\n" \
                 f"\tWidth: {self.width}\n" \
                 f"\tHeight: {self.height}\n" \
                 f"\tFPS:  {self.fps}\n" \
