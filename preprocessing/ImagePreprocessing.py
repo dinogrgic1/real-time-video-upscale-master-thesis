@@ -9,16 +9,6 @@ class ImagePreprocessing:
     pipeline = list()
 
     @staticmethod
-    def central_square_crop(image, fixed_slice=None):
-        h, w = image.shape[-3], image.shape[-2]
-        side = tf.minimum(h, w)
-        if fixed_slice is not None:
-            side = tf.minimum(side, fixed_slice)
-        begin_h = tf.maximum(0, h - side) // 2
-        begin_w = tf.maximum(0, w - side) // 2
-        return tf.slice(image, [begin_h, begin_w, 0], [side, side, -1])
-
-    @staticmethod
     def bicubic_interpolation(ratio):
         return lambda image: transforms.Resize(size=(int(image.shape[1] * ratio), int(image.shape[2] * ratio)),
                                                interpolation=transforms.InterpolationMode.BILINEAR,
@@ -35,6 +25,13 @@ class ImagePreprocessing:
         return lambda image: transforms.Resize(size=(int(image.shape[1] * ratio), int(image.shape[2] * ratio)),
                                                interpolation=transforms.InterpolationMode.LANCZOS,
                                                antialias=True).forward(image)
+
+    @staticmethod
+    def central_square_crop_numpy(image, size):
+        center = image.shape
+        x = center[1] / 2 - size / 2
+        y = center[0] / 2 - size / 2
+        return image[int(y):int(y + size), int(x):int(x + size)]
 
     def add_pipeline(self, function):
         if function is None:

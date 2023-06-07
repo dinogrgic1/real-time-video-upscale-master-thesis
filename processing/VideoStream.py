@@ -1,3 +1,4 @@
+import os.path
 from threading import Thread
 import cv2
 from time import sleep
@@ -8,6 +9,9 @@ from preprocessing.VideoMetadata import VideoMetadata
 
 class VideoStream:
     def __init__(self, path, queue_size=1024):
+        self.stream = None
+        if not os.path.exists(path):
+            raise Exception(f'File is {path} is not found')
         self.stream = cv2.VideoCapture(path)
         self.stopped = False
         self.count = 0
@@ -20,7 +24,8 @@ class VideoStream:
             self.frames[ii] = cv2.UMat(self.metadata.height, self.metadata.width, cv2.CV_8UC3)
 
     def __del__(self):
-        self.stream.release()
+        if self.stream is not None:
+            self.stream.release()
 
     def start(self):
         t = Thread(target=self.update, args=())

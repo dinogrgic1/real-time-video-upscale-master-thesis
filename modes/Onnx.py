@@ -1,49 +1,57 @@
+import datetime
 import logging
-import time
-import cv2
-import tensorrt as trt
-from tensorflow import keras
+import os.path
 import tensorflow as tf
-import torch
-import numpy as np
-import onnx
+import tensorrt as trt
+import tf2onnx
+from tensorflow import keras
 
+from modes.ApplicationHelpers import OnnxMode, tf_setup_cuda
 from modes.TrtLogger import TrtLogger
-from modes.ApplicationHelpers import OnnxMode
-from processing.VideoStream import VideoStream
-from preprocessing.ImagePreprocessing import ImagePreprocessing
+from modes.Upscale import Upscale
 
 
 class Onnx:
-    @staticmethod
-    def change_model(model, new_input_shape, custom_objects=None):
-        model.layers[0]._batch_input_shape = new_input_shape
-        new_model = keras.models.model_from_json(model.to_json(), custom_objects=custom_objects)
-        for layer in new_model.layers:
-            try:
-                layer.set_weights(model.get_layer(name=layer.name).get_weights())
-                logging.debug(f"Loaded layer {layer.name}")
-            except Exception:
-                logging.warning(f"Could not transfer weights for layer {layer.name}")
-        return new_model
-
     @staticmethod
     def process(config, args):
         if args.onnx_mode is None:
             raise Exception('Onnx mode missing')
 
+        tf_setup_cuda(config)
         if args.onnx_mode == OnnxMode.SAVE_ENGINE:
             Onnx.save_engine(config, args.onnx_model_path, args.onnx_engine_path)
+        elif args.onnx_mode == OnnxMode.SAVE_ONNX:
+            Onnx.save_onnx(config, args.model_path, args.onnx_model_path)
         else:
             raise Exception('Onnx mode not available')
 
     @staticmethod
-    def save_engine(config, onnx_model_path, engine_model_path, shape=(1, 536, 536, 3)):
+    def save_onnx(config, model_path, onnx_model_path, shape=(1, None, None, 3)):
+        if model_path is None:
+            raise Exception('Missing model path')
+
+        if onnx_model_path is None:
+            suffix = datetime.datetime.now().strftime("%d%m%y_%H%M%S")
+            onnx_model_path = f'{config.ONNX.DEFAULT_FOLDER}/model_{suffix}.onnx'
+            logging.warning(f'Engine model path not defined saving it to {onnx_model_path}')
+
+        model = keras.models.load_model('playground/Fast-SRGAN/models/generator.h5', compile=False)
+        model = Upscale.change_model(model, (1, None, None, 3))
+
+        spec = (tf.TensorSpec((1, None, None, 3), tf.float32, name="input"),)
+        model_proto, _ = tf2onnx.convert.from_keras(model, input_signature=spec, opset=13, output_path=onnx_model_path)
+        logging.info(f"Saving onnx model of {model_path} to {onnx_model_path}")
+
+
+    @staticmethod
+    def save_engine(config, onnx_model_path, engine_model_path, shape=(1, 512, 512, 3)):
         if onnx_model_path is None:
             raise Exception('Missing onnx model path')
 
+        model_name, _ = os.path.splitext(onnx_model_path)
         if engine_model_path is None:
-            engine_model_path = f'{config.onnx.default_folder}/{time.time()}.onnx'
+            dimension = "x".join(map(str, shape))
+            engine_model_path = f'{model_name}_{dimension}.engine'
             logging.warning(f'Engine model path not defined saving it to {engine_model_path}')
 
         trt_logger = TrtLogger()

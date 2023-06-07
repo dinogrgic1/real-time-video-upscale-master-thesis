@@ -1,17 +1,10 @@
 import logging
-import time
-import cv2
-import tensorrt as trt
-from tensorflow import keras
-import tensorflow as tf
-import torch
-import numpy as np
-import onnx
 import os
+import cv2
 
-from modes.ApplicationHelpers import PreprocessMode, generate_random_filename
-from processing.VideoStream import VideoStream
+from modes.ApplicationHelpers import PreprocessMode
 from preprocessing.ImagePreprocessing import ImagePreprocessing
+from processing.VideoStream import VideoStream
 
 
 class PreprocessVideo:
@@ -21,28 +14,37 @@ class PreprocessVideo:
             raise Exception('PreprocessVideo mode missing')
 
         if args.preprocess_mode == PreprocessMode.CROP_VIDEO:
-            PreprocessVideo.crop_video(config, args.original_video_path, args.exported_video_path)
+            PreprocessVideo.crop_video(args.original_video_path, args.exported_video_path, args.crop_video_size)
         else:
             raise Exception('PreprocessVideo mode not available')
 
     @staticmethod
-    def crop_video(config, original_video_path, export_video_path, crop_ratio=128):
+    def crop_video(original_video_path, export_video_path, crop_ratio=400):
         if original_video_path is None:
             raise Exception('Original video path missing')
 
         video = VideoStream(original_video_path).start()
         logging.info(video.metadata)
-        file_name, file_extension = os.path.splitext(original_video_path)
+
+        file_path, file_with_extension = os.path.split(original_video_path)
+        file_name, file_extension = os.path.splitext(file_with_extension)
 
         if export_video_path is None:
-            export_video_path = f'{crop_ratio}/{file_name}_{crop_ratio}.{file_extension}'
+            file_path = f'{file_path}/cropped_{crop_ratio}'
+            export_video_path = f'{file_path}/{file_name}_{crop_ratio}{file_extension}'
+
+        if not os.path.exists(file_path):
+            os.mkdir(file_path)
 
         size = (crop_ratio, crop_ratio)
-        fourcc = cv2.VideoWriter_fourcc(*'mpv4')
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         result = cv2.VideoWriter(export_video_path, fourcc, video.metadata.fps, size)
 
+        logging.info(f"Started exporting video to {export_video_path}")
         while not video.stopped or video.more():
             frame = video.read().get()
-            frame = ImagePreprocessing.central_square_crop(frame, crop_ratio).numpy()
+            frame = ImagePreprocessing.central_square_crop_numpy(frame, crop_ratio)
             result.write(frame)
         result.release()
+        logging.info(f"Finished exporting video to {export_video_path}")
+
