@@ -3,11 +3,11 @@ LOGGING:
   FORMAT: "%(asctime)s | %(message)s"
   DATE_FORMAT: "%d-%b-%y %H:%M:%S"
 VIDEO_PLAYER:
-  CAP_FPS: True
+  CAP_FPS: False
   WINDOW_IDENTIFIER_ORIGINAL: "Original"
   WINDOW_IDENTIFIER_UPSCALE: "Upscale"
   DELTA_REAL_TIME_MS_VIDEO: 8
 ONNX:
   DEFAULT_FOLDER: "models/saved/onnx"
 TENSORFLOW:
-  GPU_LIMIT_SCALE: 0.8
+  GPU_LIMIT_SCALE: 0.6

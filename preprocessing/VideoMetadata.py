@@ -9,7 +9,7 @@ class VideoMetadata:
         self.fps_to_ms = None
         self.width = int(stream.get(cv2.CAP_PROP_FRAME_WIDTH))
         self.height = int(stream.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        self.fps = stream.get(cv2.CAP_PROP_FPS)
+        self.fps = int(stream.get(cv2.CAP_PROP_FPS))
         self.bitrate = stream.get(cv2.CAP_PROP_BITRATE)
         self.num_frames = stream.get(cv2.CAP_PROP_FRAME_COUNT)
         self.codec = int(stream.get(cv2.CAP_PROP_FOURCC))

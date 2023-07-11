@@ -1,7 +1,8 @@
 import lpips
 import numpy
 import torch
-
+import json
+from skimage.metrics import structural_similarity as ssim
 
 class ImageMetrics:
     @staticmethod
@@ -43,22 +44,22 @@ class ImageMetrics:
         raise Exception('Unsupported image type')
 
     @staticmethod
-    def __dssim__metric__tensor(first_image: torch.Tensor, second_image: torch.Tensor, range=255.):
-        return ImageMetrics.__dssim_metric__numpy(first_image.numpy(), second_image.numpy(), range)
+    def __ssim__metric__tensor(first_image: torch.Tensor, second_image: torch.Tensor, range=255.):
+        return ImageMetrics.__ssim_metric__numpy(first_image.numpy(), second_image.numpy(), range)
 
     @staticmethod
-    def __dssim_metric__numpy(first_image: numpy.ndarray, second_image: numpy.ndarray, range=255.):
-        return lpips.dssim(first_image, second_image, range)
+    def __ssim_metric__numpy(first_image: numpy.ndarray, second_image: numpy.ndarray, range=255.):
+        return ssim(first_image, second_image, channel_axis=2)
 
     @staticmethod
-    def dssim_metric(first_image, second_image, range=255.):
+    def ssim_metric(first_image, second_image, range=255.):
         if type(first_image) != type(second_image):
             raise Exception('Images are not of the same type')
 
         if type(first_image) == numpy.ndarray:
-            return ImageMetrics.__dssim_metric__numpy(first_image, second_image, range)
+            return ImageMetrics.__ssim_metric__numpy(first_image, second_image, range)
         if type(first_image) == torch.Tensor:
-            return ImageMetrics.__dssim__metric__tensor(first_image, second_image, range)
+            return ImageMetrics.__ssim__metric__tensor(first_image, second_image, range)
         raise Exception('Unsupported image type')
 
     @staticmethod
@@ -66,11 +67,28 @@ class ImageMetrics:
         return model(first_image, second_image).detach().numpy().flatten()[0]
 
     @staticmethod
-    def lpips_metric(first_image, second_image, net='vgg'):
-        model = lpips.LPIPS(net=net, verbose=False)
+    def lpips_metric(first_image, second_image, model):
         if type(first_image) != type(second_image):
             raise Exception('Images are not of the same type')
 
         if type(first_image) == torch.Tensor:
             return ImageMetrics.__lpips__metric__tensor(model, first_image, second_image)
         raise Exception('Unsupported image type')
+
+    @staticmethod
+    def metric_export(first_image, second_image, interpolation, lpips_model):
+        dictionary = {
+            "name": interpolation,
+            "psnr": str(ImageMetrics.psnr_metric(first_image, second_image, peak=255.)),
+            "l2": str(ImageMetrics.l2_metric(first_image, second_image)),
+            "ssim": str(ImageMetrics.ssim_metric(first_image, second_image)),
+            "lpips": str(ImageMetrics.lpips_metric(torch.tensor(first_image).permute(2, 0, 1),
+                                                   torch.tensor(second_image).permute(2, 0, 1), lpips_model))
+        }
+        return dictionary
+
+    @staticmethod
+    def metric_export_all(metrics, file_name):
+        json_object = json.dumps(metrics, indent=4)
+        with open(f'{file_name}_metrics.json', "w") as outfile:
+            outfile.write(json_object)

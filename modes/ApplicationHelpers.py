@@ -9,14 +9,17 @@ def parse_arguments():
     parser = ArgumentParser()
     parser.add_argument("--mode", type=ApplicationMode, choices=list(ApplicationMode))
     parser.add_argument("--onnx_mode", type=OnnxMode, choices=list(OnnxMode), required=False)
+    parser.add_argument("--upscale_device", type=OnnxMode, choices=list(UpscaleMode), required=False)
     parser.add_argument("--preprocess_mode", type=PreprocessMode, choices=list(PreprocessMode), required=False)
     parser.add_argument("--model_path", type=str, required=False)
     parser.add_argument("--onnx_model_path", type=str, required=False)
     parser.add_argument("--onnx_engine_path", type=str, required=False)
     parser.add_argument("--original_video_path", type=str, required=False)
+    parser.add_argument("--gt_video_path", type=str, required=False)
     parser.add_argument("--original_video_play", type=bool, required=False)
     parser.add_argument("--exported_video_path", type=str, required=False)
     parser.add_argument("--crop_video_size", type=int, required=False, default=400)
+    parser.add_argument("--downscale_video_ratio", type=float, required=False, default=0.25)
     return parser.parse_args()
 
 
@@ -25,11 +28,13 @@ def torch_setup_cuda():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     logging.info(f'Device: {device}')
     if device.type == 'cuda':
+        print('using device cuda')
         device_id = torch.cuda.device(torch.cuda.current_device())
         logging.info(f'\tDevice name: {torch.cuda.get_device_name(device_id)}')
         logging.info(f'\tAllocated: {round(torch.cuda.memory_allocated(0) / 1024 ** 3, 1)} GB')
         logging.info(f'\tCached: {round(torch.cuda.memory_reserved(0) / 1024 ** 3, 1)} GB')
     torch.cuda.set_device(device_id)
+    print('using device 1')
 
 
 def tf_setup_cuda(config):
@@ -52,6 +57,15 @@ class ApplicationMode(Enum):
         return self.value
 
 
+class UpscaleMode(Enum):
+    CPU = 'cpu'
+    GPU = 'gpu'
+    ONNX = 'onnx'
+
+    def __str__(self):
+        return self.value
+
+
 class OnnxMode(Enum):
     SAVE_ENGINE = 'save_engine'
     SAVE_ONNX = 'save_onnx'
@@ -62,6 +76,7 @@ class OnnxMode(Enum):
 
 class PreprocessMode(Enum):
     CROP_VIDEO = 'crop_video'
+    DOWNSCALE_VIDEO = 'downscale_video'
 
     def __str__(self):
         return self.value

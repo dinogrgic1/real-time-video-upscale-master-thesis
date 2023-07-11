@@ -12,7 +12,6 @@ if __name__ == '__main__':
     logging.basicConfig(level=config.LOGGING.LEVEL, format=config.LOGGING.FORMAT, datefmt=config.LOGGING.DATE_FORMAT)
 
     args = parse_arguments()
-    torch_setup_cuda()
 
     if args.mode == ApplicationMode.UPSCALE:
         Upscale.process(config, args)

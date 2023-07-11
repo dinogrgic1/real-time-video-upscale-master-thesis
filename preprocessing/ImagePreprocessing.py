@@ -9,6 +9,12 @@ class ImagePreprocessing:
     pipeline = list()
 
     @staticmethod
+    def nn_interpolation(ratio):
+        return lambda image: transforms.Resize(size=(int(image.shape[1] * ratio), int(image.shape[2] * ratio)),
+                                               interpolation=transforms.InterpolationMode.NEAREST,
+                                               antialias=True).forward(image)
+
+    @staticmethod
     def bicubic_interpolation(ratio):
         return lambda image: transforms.Resize(size=(int(image.shape[1] * ratio), int(image.shape[2] * ratio)),
                                                interpolation=transforms.InterpolationMode.BILINEAR,

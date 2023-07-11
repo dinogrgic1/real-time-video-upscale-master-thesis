@@ -5,6 +5,7 @@ import tensorflow as tf
 import tensorrt as trt
 import tf2onnx
 from tensorflow import keras
+from tf2onnx.tfonnx import process_tf_graph, tf_optimize
 
 from modes.ApplicationHelpers import OnnxMode, tf_setup_cuda
 from modes.TrtLogger import TrtLogger
@@ -35,16 +36,30 @@ class Onnx:
             onnx_model_path = f'{config.ONNX.DEFAULT_FOLDER}/model_{suffix}.onnx'
             logging.warning(f'Engine model path not defined saving it to {onnx_model_path}')
 
-        model = keras.models.load_model('playground/Fast-SRGAN/models/generator.h5', compile=False)
-        model = Upscale.change_model(model, (1, None, None, 3))
+        # model = tf.saved_model.load(model_path)
+        # # model = keras.models.load_model(model_path, compile=False)
+        # # model = Upscale.change_model(model, (1, None, None, 3))
+        #
+        # spec = (tf.TensorSpec((1, None, None, 3), tf.float32, name="input"),)
+        graph_def = tf.compat.v1.GraphDef()
+        with open(model_path, 'rb') as f:
+            graph_def.ParseFromString(f.read())
 
-        spec = (tf.TensorSpec((1, None, None, 3), tf.float32, name="input"),)
-        model_proto, _ = tf2onnx.convert.from_keras(model, input_signature=spec, opset=13, output_path=onnx_model_path)
+        with tf.Graph().as_default() as graph:
+            tf.import_graph_def(graph_def, name='')
+
+        #model_proto, _ = tf2onnx.convert.from_graph_def(graph_def, input_names=['IteratorGetNext:0[1,128,128,4]'], output_names=['NCHW_output:0[1, 256, 256, 3'], output_path=onnx_model_path)
+
+        with tf.Graph().as_default() as graph:
+            tf.import_graph_def(graph_def, name='')
+            onnx_graph = process_tf_graph(graph, opset=11, shape_override={'IteratorGetNext:0': [1,512,512,4]}, input_names=['IteratorGetNext:0'], output_names=['NCHW_output:0'])
+        model_proto = onnx_graph.make_model("test")
+        with open(onnx_model_path, "wb") as f:
+            f.write(model_proto.SerializeToString())
         logging.info(f"Saving onnx model of {model_path} to {onnx_model_path}")
 
-
     @staticmethod
-    def save_engine(config, onnx_model_path, engine_model_path, shape=(1, 512, 512, 3)):
+    def save_engine(config, onnx_model_path, engine_model_path, shape=(1, 128, 128, 1)):
         if onnx_model_path is None:
             raise Exception('Missing onnx model path')
 
